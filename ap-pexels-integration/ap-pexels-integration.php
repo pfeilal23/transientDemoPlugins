@@ -27,7 +27,7 @@ if ( false === $previous_category_attribute ){
 
     $previous_photo_attribute = get_transient('photo_attribute');
 
-    if ( False === $previous_photo_attribute ){
+    if ( false === $previous_photo_attribute ){
         set_transient('photo_attribute', $photos);
     }
 
