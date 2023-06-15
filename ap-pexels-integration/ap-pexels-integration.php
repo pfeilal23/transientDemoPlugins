@@ -15,10 +15,30 @@ function ap_pexels($atts){
         $atts,
         'pexels'
     ) );
+
+    /*If the person setting the shortcode changes their mind, this helps to cover that. However, if you're using multiple instances of the shortcode, say on different pages, you're on your own. I couldn't wrap my brain around that one. If they had previously set attribute values and then removed the attributes altogether, you're also on your own. We did not go over this in the demo. */
+    $previous_category_attribute = get_transient('category_attribute');
+
+if ( false === $previous_category_attribute ){
+
+    /*When using the extract function it automatically creates the $category and $photos variables. */
+    set_transient('category_attribute', $category); /*If no expiration is specified, it doesn't expire. This is fine for this particular use case. */
+}
+
+    $previous_photo_attribute = get_transient('photo_attribute');
+
+    if ( False === $previous_photo_attribute ){
+        set_transient('photo_attribute', $photos);
+    }
+
+
     
     $pexels = get_transient( 'pexels' );
-    if( false === $pexels ) {
-        //sleep for 3 seconds
+
+    /*If the pexels transient doesn not exist or if any of the shortcode attributes have been updated, run the api call. */
+    if(( false === $pexels ) || ($photos !== $previous_photo_attribute) || ($category !== $previous_category_attribute )) {
+
+        /*Sleep for 3 seconds. That was for demonstration purposes only, to more clearly illustrate page speed savings when a transient is set. Pexels API is actually fairly quick. If you're making a real plugin, there is no need for the sleep function.*/
 sleep(3);
      
     $args = array(
@@ -27,20 +47,26 @@ sleep(3);
     );
 
         $ch = curl_init();
-$category = $args['category'];
-$categories = array($category, 'cats', 'dogs', 'horses', 'lions');
+$category2 = $args['category'];
+$categories = array($category2, 'cats', 'dogs', 'horses', 'lions');
 $randomize = $categories[array_rand($categories)];
-$photos = $args['photos'];
+$photos2 = $args['photos'];
 
-curl_setopt($ch, CURLOPT_URL, "https://api.pexels.com/v1/search?query=$randomize&per_page=$photos");
+curl_setopt($ch, CURLOPT_URL, "https://api.pexels.com/v1/search?query=$randomize&per_page=$photos2");
+
+/*This returns the data as a string, as opposed to outputting it directly. */
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+
 curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
 
 
 $headers = array();
 $headers[] = "Content-Type: application/json";
 $headers[] = "Accept: application/json";
+
+/* In a real plugin, store the API key on an options page. DO NOT JUST PUT IT IN THIS STRING!! That's a huge security issue. */
 $headers[] = 'Authorization: yourApiKey';
+
 curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
 $result = curl_exec($ch);
@@ -53,10 +79,14 @@ curl_close($ch);
 
 $decoded = json_decode($result);
    
+/*By reading the Pexels API documentation I know there will be an array called photos. */
 $pexels = $decoded->photos;
 
 set_transient( 'pexels', $pexels, DAY_IN_SECONDS );
     }
+
+    
+    
     
 $output = '<ol>';
 foreach ( $pexels as $img ){
